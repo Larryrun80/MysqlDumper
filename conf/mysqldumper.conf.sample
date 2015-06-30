@@ -3,7 +3,7 @@ Host = localhost
 User = username
 Password = password
 Port = 3306
-Prefix = backupd
+Prefix = backup
 
 [DATABASE_NAME_TO_BACKUP]
 Host = host
