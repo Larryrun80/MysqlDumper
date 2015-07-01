@@ -114,8 +114,13 @@ try:
                           + config.get(database, 'Database')
                 # if with port config
                 if config.has_option(database, 'Port'):
-                    dumpcmd += " -P" \
-                            + config.get(database, 'Port')
+                    if config.get(database, 'Port') \
+                             .replace('\r', '') \
+                             .replace('\n', '') \
+                             .replace(' ', '') \
+                             != '':
+                        dumpcmd += " -P" \
+                                + config.get(database, 'Port')
                 # if with ignore config
                 if config.has_option(database, 'Ignore_Tables'):
                     ignore_tables = config.get(database,
@@ -141,10 +146,15 @@ try:
 
                 # using ssh tunnel if needed
                 if config.has_option(database, 'SSH_Tunnel'):
-                    dumpcmd = 'ssh ' \
-                              + config.get(database, 'SSH_Tunnel') \
-                              + ' ' \
-                              + dumpcmd
+                    if config.get(database, 'SSH_Tunnel') \
+                             .replace('\r', '') \
+                             .replace('\n', '') \
+                             .replace(' ', '') \
+                             != '':
+                        dumpcmd = 'ssh ' \
+                                  + config.get(database, 'SSH_Tunnel') \
+                                  + ' ' \
+                                  + dumpcmd
 
                 # Open this if you want to debug the command
                 # print(dumpcmd)
