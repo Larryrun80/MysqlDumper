@@ -20,6 +20,12 @@ import time
 import subprocess
 import sys
 
+
+# Defining method to unify format of output info
+def print_log(log_text):
+    log_prefix = '[ {0} ]'.format(time.strftime('%Y%m%d-%H%M%S'))
+    print('{0}{1}').format(log_prefix, log_text)
+
 # Config file to get To-Backup database(s) info
 # You can assign multi database info in config file
 # Remember using same format as following:
@@ -77,12 +83,12 @@ TODAY_BACKUP_PATH = BACKUP_PATH + time.strftime('%Y%m%d-%H%M%S')
 print('============== START BACKUP ON {0} =============='
       .format(time.strftime('%Y-%m-%d %H:%M:%S')))
 # Checking if backup folder already exists. Create it if not.
-print("checking backup folder")
+print_log("checking backup folder")
 if not os.path.exists(TODAY_BACKUP_PATH):
     os.makedirs(TODAY_BACKUP_PATH)
-    print('created backup folder: {0}'.format(TODAY_BACKUP_PATH))
+    print_log('created backup folder: {0}'.format(TODAY_BACKUP_PATH))
 else:
-    print('backup folder found at {0}'.format(TODAY_BACKUP_PATH))
+    print_log('backup folder found at {0}'.format(TODAY_BACKUP_PATH))
 
 try:
     # Geting databases and backup
@@ -90,13 +96,13 @@ try:
     config.read(CONFIG_FILE)
     for database in config.sections():
         if database != 'RESTORE_SETTINGS':
-            print('checking and back up database: {0}'.format(database))
+            print_log('checking and back up database: {0}'.format(database))
 
             # Checking if all options needed had been set
             legal_section = True
             for must_option in DB_MUST_OPTIONS:
                 if not config.has_option(database, must_option):
-                    print('{0} not found in {1} section, skipped'
+                    print_log('{0} not found in {1} section, skipped'
                           .format(must_option, database))
                     legal_section = False
                     break
@@ -156,7 +162,7 @@ try:
                                   + dumpcmd
 
                 # Open this if you want to debug the command
-                # print(dumpcmd)
+                # print_log(dumpcmd)
 
                 # executing backup command
                 try:
@@ -165,9 +171,9 @@ try:
                     if config.get(database, 'Need_Restore') == 'yes':
                         Restore_DBs.append(config.get(database,
                                            'Database'))
-                    print('backup {0} successed'.format(database))
+                    print_log('backup {0} successed'.format(database))
                 except subprocess.CalledProcessError as e:
-                    print('error found, backup and restore terminated')
+                    print_log('error found, backup and restore terminated')
 
     # Checking is some databases needs restore
     if len(Restore_DBs) > 0:
@@ -175,13 +181,13 @@ try:
         legal_restore_info = True
         for must_option in RESTORE_MUST_OPTIONS:
             if not config.has_option('RESTORE_SETTINGS', must_option):
-                print('{0} not found in restore section,\
+                print_log('{0} not found in restore section,\
                            skipped'.format(must_option))
                 legal_restore_info = False
         # Starting restore
         if legal_restore_info:
             for db_name in Restore_DBs:
-                print('start restoring databases {0}'.format(db_name))
+                print_log('start restoring databases {0}'.format(db_name))
                 # generating back up database name
                 backup_name = config.get('RESTORE_SETTINGS', 'Prefix') \
                                     .replace(' ', '') + '_' + db_name
@@ -204,13 +210,13 @@ try:
                              + ".sql"
 
                 # Open this if you want to debug the command
-                # print(restorecmd)
+                # print_log(restorecmd)
 
                 # executing restore command
                 try:
                     subprocess.check_call(restorecmd, shell=True)
-                    print('restore {0} successed'.format(db_name))
+                    print_log('restore {0} successed'.format(db_name))
                 except subprocess.CalledProcessError as e:
-                    print('error found, restore terminated')
+                    print_log('error found, restore terminated')
 except:
-    print('%s: %s', str(sys.exc_info()[0]), str(sys.exc_info()[1]))
+    print_log('%s: %s', str(sys.exc_info()[0]), str(sys.exc_info()[1]))
