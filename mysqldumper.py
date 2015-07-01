@@ -130,7 +130,9 @@ try:
                                    + "." \
                                    + table
                 # add set gtid option (for mysql5.6) and complete command
-                dumpcmd += " --set-gtid-purged=OFF" \
+                dumpcmd += " --set-gtid-purged=OFF \
+                             --single-transaction \
+                             --quick" \
                            + "  > " \
                            + TODAY_BACKUP_PATH \
                            + "/" \
