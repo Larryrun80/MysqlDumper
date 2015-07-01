@@ -18,6 +18,7 @@ from configparser import ConfigParser
 import os
 import time
 import subprocess
+import sys
 
 # Config file to get To-Backup database(s) info
 # You can assign multi database info in config file
@@ -83,119 +84,122 @@ if not os.path.exists(TODAY_BACKUP_PATH):
 else:
     print('backup folder found at {0}'.format(TODAY_BACKUP_PATH))
 
-# Geting databases and backup
-config = ConfigParser()
-config.read(CONFIG_FILE)
-for database in config.sections():
-    if database != 'RESTORE_SETTINGS':
-        print('checking and back up database: {0}'.format(database))
+try:
+    # Geting databases and backup
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    for database in config.sections():
+        if database != 'RESTORE_SETTINGS':
+            print('checking and back up database: {0}'.format(database))
 
-        # Checking if all options needed had been set
-        legal_section = True
-        for must_option in DB_MUST_OPTIONS:
-            if not config.has_option(database, must_option):
-                print('{0} not found in {1} section, skipped'
-                      .format(must_option, database))
-                legal_section = False
-                break
+            # Checking if all options needed had been set
+            legal_section = True
+            for must_option in DB_MUST_OPTIONS:
+                if not config.has_option(database, must_option):
+                    print('{0} not found in {1} section, skipped'
+                          .format(must_option, database))
+                    legal_section = False
+                    break
 
-        # Backuping
-        if legal_section:
-            # build command to exec
-            dumpcmd = "MYSQL_PWD="\
-                      + config.get(database, 'Password') \
-                      + " mysqldump -h"\
-                      + config.get(database, 'Host') \
-                      + " -u" \
-                      + config.get(database, 'User') \
-                      + " " \
-                      + config.get(database, 'Database')
-            # if with port config
-            if config.has_option(database, 'Port'):
-                dumpcmd += " -P" \
-                        + config.get(database, 'Port')
-            # if with ignore config
-            if config.has_option(database, 'Ignore_Tables'):
-                ignore_tables = config.get(database,
-                                           'Ignore_Tables') \
-                                           .replace('\r', '') \
-                                           .replace('\n', '') \
-                                           .replace(' ', '') \
-                                           .split(',')
-                for table in ignore_tables:
-                    dumpcmd += " --ignore-table=" \
-                               + config.get(database, 'Database') \
-                               + "." \
-                               + table
-            # add set gtid option (for mysql5.6) and complete command
-            dumpcmd += " --set-gtid-purged=OFF" \
-                       + "  > " \
-                       + TODAY_BACKUP_PATH \
-                       + "/" \
-                       + config.get(database, 'Database') \
-                       + ".sql"
+            # Backuping
+            if legal_section:
+                # build command to exec
+                dumpcmd = "MYSQL_PWD="\
+                          + config.get(database, 'Password') \
+                          + " mysqldump -h"\
+                          + config.get(database, 'Host') \
+                          + " -u" \
+                          + config.get(database, 'User') \
+                          + " " \
+                          + config.get(database, 'Database')
+                # if with port config
+                if config.has_option(database, 'Port'):
+                    dumpcmd += " -P" \
+                            + config.get(database, 'Port')
+                # if with ignore config
+                if config.has_option(database, 'Ignore_Tables'):
+                    ignore_tables = config.get(database,
+                                               'Ignore_Tables') \
+                                               .replace('\r', '') \
+                                               .replace('\n', '') \
+                                               .replace(' ', '') \
+                                               .split(',')
+                    for table in ignore_tables:
+                        dumpcmd += " --ignore-table=" \
+                                   + config.get(database, 'Database') \
+                                   + "." \
+                                   + table
+                # add set gtid option (for mysql5.6) and complete command
+                dumpcmd += " --set-gtid-purged=OFF" \
+                           + "  > " \
+                           + TODAY_BACKUP_PATH \
+                           + "/" \
+                           + config.get(database, 'Database') \
+                           + ".sql"
 
-            # using ssh tunnel if needed
-            if config.has_option(database, 'SSH_Tunnel'):
-                dumpcmd = 'ssh ' \
-                          + config.get(database, 'SSH_Tunnel') \
-                          + ' ' \
-                          + dumpcmd
+                # using ssh tunnel if needed
+                if config.has_option(database, 'SSH_Tunnel'):
+                    dumpcmd = 'ssh ' \
+                              + config.get(database, 'SSH_Tunnel') \
+                              + ' ' \
+                              + dumpcmd
 
-            # Open this if you want to debug the command
-            # print(dumpcmd)
+                # Open this if you want to debug the command
+                # print(dumpcmd)
 
-            # executing backup command
-            try:
-                subprocess.check_call(dumpcmd, shell=True)
-                # if this database needs restore, add to list
-                if config.get(database, 'Need_Restore') == 'yes':
-                    Restore_DBs.append(config.get(database,
-                                       'Database'))
-                print('backup {0} successed'.format(database))
-            except subprocess.CalledProcessError as e:
-                print('error found, backup and restore terminated')
+                # executing backup command
+                try:
+                    subprocess.check_call(dumpcmd, shell=True)
+                    # if this database needs restore, add to list
+                    if config.get(database, 'Need_Restore') == 'yes':
+                        Restore_DBs.append(config.get(database,
+                                           'Database'))
+                    print('backup {0} successed'.format(database))
+                except subprocess.CalledProcessError as e:
+                    print('error found, backup and restore terminated')
 
-# Checking is some databases needs restore
-if len(Restore_DBs) > 0:
-    # Checking all options restore db needed had been set
-    legal_restore_info = True
-    for must_option in RESTORE_MUST_OPTIONS:
-        if not config.has_option('RESTORE_SETTINGS', must_option):
-            print('{0} not found in restore section,\
-                       skipped'.format(must_option))
-            legal_restore_info = False
-    # Starting restore
-    if legal_restore_info:
-        for db_name in Restore_DBs:
-            print('start restoring databases {0}'.format(db_name))
-            # generating back up database name
-            backup_name = config.get('RESTORE_SETTINGS', 'Prefix') \
-                                .replace(' ', '') + '_' + db_name
-            if backup_name[0] == '_':
-                backup_name = db_name
+    # Checking is some databases needs restore
+    if len(Restore_DBs) > 0:
+        # Checking all options restore db needed had been set
+        legal_restore_info = True
+        for must_option in RESTORE_MUST_OPTIONS:
+            if not config.has_option('RESTORE_SETTINGS', must_option):
+                print('{0} not found in restore section,\
+                           skipped'.format(must_option))
+                legal_restore_info = False
+        # Starting restore
+        if legal_restore_info:
+            for db_name in Restore_DBs:
+                print('start restoring databases {0}'.format(db_name))
+                # generating back up database name
+                backup_name = config.get('RESTORE_SETTINGS', 'Prefix') \
+                                    .replace(' ', '') + '_' + db_name
+                if backup_name[0] == '_':
+                    backup_name = db_name
 
-            # generating restore command to exec
-            restorecmd = "MYSQL_PWD="\
-                         + config.get('RESTORE_SETTINGS', 'Password') \
-                         + " mysql -h"\
-                         + config.get('RESTORE_SETTINGS', 'Host') \
-                         + " -u" \
-                         + config.get('RESTORE_SETTINGS', 'User') \
-                         + " " \
-                         + backup_name \
-                         + " < " \
-                         + TODAY_BACKUP_PATH \
-                         + "/" \
-                         + db_name \
-                         + ".sql"
+                # generating restore command to exec
+                restorecmd = "MYSQL_PWD="\
+                             + config.get('RESTORE_SETTINGS', 'Password') \
+                             + " mysql -h"\
+                             + config.get('RESTORE_SETTINGS', 'Host') \
+                             + " -u" \
+                             + config.get('RESTORE_SETTINGS', 'User') \
+                             + " " \
+                             + backup_name \
+                             + " < " \
+                             + TODAY_BACKUP_PATH \
+                             + "/" \
+                             + db_name \
+                             + ".sql"
 
-            # Open this if you want to debug the command
-            # print(restorecmd)
+                # Open this if you want to debug the command
+                # print(restorecmd)
 
-            # executing restore command
-            try:
-                subprocess.check_call(restorecmd, shell=True)
-                print('restore {0} successed'.format(db_name))
-            except subprocess.CalledProcessError as e:
-                print('error found, restore terminated')
+                # executing restore command
+                try:
+                    subprocess.check_call(restorecmd, shell=True)
+                    print('restore {0} successed'.format(db_name))
+                except subprocess.CalledProcessError as e:
+                    print('error found, restore terminated')
+except:
+    print('%s: %s', str(sys.exc_info()[0]), str(sys.exc_info()[1]))
