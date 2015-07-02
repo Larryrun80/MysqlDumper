@@ -24,7 +24,7 @@ import sys
 # Defining method to unify format of output info
 def print_log(log_text):
     log_prefix = '[ {0} ]'.format(time.strftime('%Y%m%d-%H%M%S'))
-    print('{0}{1}').format(log_prefix, log_text)
+    print(('{0}{1}').format(log_prefix, log_text))
 
 # Config file to get To-Backup database(s) info
 # You can assign multi database info in config file
@@ -103,7 +103,7 @@ try:
             for must_option in DB_MUST_OPTIONS:
                 if not config.has_option(database, must_option):
                     print_log('{0} not found in {1} section, skipped'
-                          .format(must_option, database))
+                              .format(must_option, database))
                     legal_section = False
                     break
 
