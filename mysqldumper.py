@@ -23,7 +23,7 @@ import sys
 
 # Defining method to unify format of output info
 def print_log(log_text):
-    log_prefix = '[ {0} ]'.format(time.strftime('%Y%m%d-%H%M%S'))
+    log_prefix = '[{0}]'.format(time.strftime('%Y-%m-%d %H:%M:%S'))
     print(('{0}{1}').format(log_prefix, log_text))
 
 # Config file to get To-Backup database(s) info
