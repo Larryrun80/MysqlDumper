@@ -26,6 +26,22 @@ def print_log(log_text):
     log_prefix = '[{0}]'.format(time.strftime('%Y-%m-%d %H:%M:%S'))
     print(('{0}{1}').format(log_prefix, log_text))
 
+
+# Return a boolean to indicate whether the sqldump command needs a
+# gtid option. this option is needed from mysql version 5.6
+def need_gtid():
+    try:
+        mysql_output = subprocess.check_output('mysql -V', shell=True).decode()
+        start_pos = mysql_output.find('Distrib') + len('Distrib') + 1
+        tmp_str_array = mysql_output[start_pos:].split('.')
+        mysql_ver = '{0}.{1}'.format(tmp_str_array[0], tmp_str_array[1])
+        if (type(eval(mysql_ver)) == float) and (float(mysql_ver) >= 5.6):
+            return True
+        else:
+            return False
+    except:
+        return False
+
 # Config file to get To-Backup database(s) info
 # You can assign multi database info in config file
 # Remember using same format as following:
@@ -69,7 +85,8 @@ def print_log(log_text):
 # make sure you created the same databses on your restore mysql
 # and make sure your account have the appropraite provilieges
 # PORT option is optional if you are using 3306
-CONFIG_FILE = 'conf/mysqldumper.conf'
+CONFIG_FILE = os.path.abspath(os.path.dirname(__file__)) \
+              + '/conf/mysqldumper.conf'
 DB_MUST_OPTIONS = ('Host', 'User', 'Password', 'Database', 'Need_Restore')
 # Using Restore_DBs to save dabases want to be restored
 Restore_DBs = []
@@ -80,8 +97,14 @@ RESTORE_MUST_OPTIONS = ('Host', 'User', 'Password', 'Prefix')
 BACKUP_PATH = os.path.abspath(os.path.dirname(__file__)) + '/backup/'
 TODAY_BACKUP_PATH = BACKUP_PATH + time.strftime('%Y%m%d-%H%M%S')
 
-print('============== START BACKUP ON {0} =============='
+print('''
+#################################################################
+============== START BACKUP ON {0} ==============
+#################################################################
+
+      '''
       .format(time.strftime('%Y-%m-%d %H:%M:%S')))
+
 # Checking if backup folder already exists. Create it if not.
 print_log("checking backup folder")
 if not os.path.exists(TODAY_BACKUP_PATH):
@@ -93,6 +116,10 @@ else:
 try:
     # Geting databases and backup
     config = ConfigParser()
+    if not os.path.exists(CONFIG_FILE):
+        print_log('Config file not found at: {0}, exit'
+                  .format(os.path.abspath(CONFIG_FILE)))
+        sys.exit()
     config.read(CONFIG_FILE)
     for database in config.sections():
         if database != 'RESTORE_SETTINGS':
@@ -141,8 +168,10 @@ try:
                                    + "." \
                                    + table
                 # add set gtid option (for mysql5.6) and complete command
-                dumpcmd += " --set-gtid-purged=OFF " \
-                           + "--single-transaction --quick" \
+                if need_gtid():
+                    dumpcmd += " --set-gtid-purged=OFF "
+
+                dumpcmd += "--single-transaction --quick" \
                            + "  > " \
                            + TODAY_BACKUP_PATH \
                            + "/" \
@@ -218,5 +247,8 @@ try:
                     print_log('restore {0} successed'.format(db_name))
                 except subprocess.CalledProcessError as e:
                     print_log('error found, restore terminated')
+except SystemExit:
+    print_log('error found, process terminated')
 except:
-    print_log('%s: %s', str(sys.exc_info()[0]), str(sys.exc_info()[1]))
+    print_log('{0}: {1}'.format(str(sys.exc_info()[0]),
+                                str(sys.exc_info()[1])))
