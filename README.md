@@ -25,3 +25,22 @@ SSH_Tunnel = username@host
 ```
 You can create this config file as conf/mysqldumper.conf
 Or change the default config file in mysqldumper.py
+
+## Dealing Errors
+The script always tries to give out detail error info, if you found obstacle to get error info, please inform me.
+When you are backing up a large db, lots errors may be caused by you mysql settings, like:
+- MSQL0003: MySQL backup operation fails with lost connection error
+which with information:
+```
+Backup fail with: Mysqldump: Error 2013: Lost connection to MySQL server during query when dumping table.
+```
+if you encounter this error when backing up your db, try to:
+1. set the value for "max_allowed_packet" variable as 1GB in your my.cnf
+2. increase the value for the "connect_timeout" variable to 100
+and restart your mysql.
+
+- ERROR 2006 (HY000) at line 225: MySQL server has gone away
+if you encounter this error when restoring your db, try to:
+1. set the value for "max_allowed_packet" variable as 1GB in your my.cnf
+2. increase the value for the "wait_timeout" variable to 6000
+and restart your mysql.

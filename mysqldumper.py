@@ -24,7 +24,7 @@ import sys
 # Defining method to unify format of output info
 def print_log(log_text):
     log_prefix = '[{0}]'.format(time.strftime('%Y-%m-%d %H:%M:%S'))
-    print(('{0}{1}').format(log_prefix, log_text))
+    print(('{0} {1}').format(log_prefix, log_text))
 
 
 # Return a boolean to indicate whether the sqldump command needs a
@@ -195,8 +195,11 @@ try:
 
                 # executing backup command
                 try:
-                    subprocess.check_call(dumpcmd, shell=True)
-                    # if this database needs restore, add to list
+                    subprocess.check_call(restorecmd,
+                                          stdout=subprocess.STDOUT,
+                                          stderr=subprocess.STDOUT,
+                                          shell=True)
+                    if this database needs restore, add to list
                     if config.get(database, 'Need_Restore') == 'yes':
                         Restore_DBs.append(config.get(database,
                                            'Database'))
@@ -239,11 +242,14 @@ try:
                              + ".sql"
 
                 # Open this if you want to debug the command
-                # print_log(restorecmd)
+                print_log(restorecmd)
 
                 # executing restore command
                 try:
-                    subprocess.check_call(restorecmd, shell=True)
+                    subprocess.check_call(restorecmd,
+                                          stdout=subprocess.STDOUT,
+                                          stderr=subprocess.STDOUT,
+                                          shell=True)
                     print_log('restore {0} successed'.format(db_name))
                 except subprocess.CalledProcessError as e:
                     print_log('error found, restore terminated')
