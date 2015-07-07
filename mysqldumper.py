@@ -195,11 +195,10 @@ try:
 
                 # executing backup command
                 try:
-                    subprocess.check_call(restorecmd,
-                                          stdout=subprocess.STDOUT,
+                    subprocess.check_call(dumpcmd,
                                           stderr=subprocess.STDOUT,
                                           shell=True)
-                    if this database needs restore, add to list
+                    # if this database needs restore, add to list
                     if config.get(database, 'Need_Restore') == 'yes':
                         Restore_DBs.append(config.get(database,
                                            'Database'))
@@ -247,7 +246,6 @@ try:
                 # executing restore command
                 try:
                     subprocess.check_call(restorecmd,
-                                          stdout=subprocess.STDOUT,
                                           stderr=subprocess.STDOUT,
                                           shell=True)
                     print_log('restore {0} successed'.format(db_name))

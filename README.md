@@ -39,8 +39,14 @@ if you encounter this error when backing up your db, try to:
 2. increase the value for the "connect_timeout" variable to 100
 and restart your mysql.
 
-- ERROR 2006 (HY000) at line 225: MySQL server has gone away
+- 2006: MySQL server has gone away
+```
+ERROR 2006 (HY000) at line xxx: MySQL server has gone away
+```
 if you encounter this error when restoring your db, try to:
 1. set the value for "max_allowed_packet" variable as 1GB in your my.cnf
 2. increase the value for the "wait_timeout" variable to 6000
 and restart your mysql.
+
+## Todo
+- user can determine whether to delete back up files some date before
