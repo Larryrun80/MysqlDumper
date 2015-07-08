@@ -15,8 +15,10 @@
 ##########################################################
 
 from configparser import ConfigParser
+import datetime
 import os
 import time
+import shutil
 import subprocess
 import sys
 
@@ -41,6 +43,44 @@ def need_gtid():
             return False
     except:
         return False
+
+
+# Delete former backup files
+# pass a date format date
+def del_backup():
+    # get the start pos of the time string in backup dir name
+    date_pos = BACKUP_DIRNAME.find(time.strftime(TIME_FORMAT))
+    if date_pos == -1:
+        print_log("defined dir name is invalid, clean up terminated")
+        return
+    else:
+        # get a valid backuped dirname
+        prefix = BACKUP_DIRNAME[0:date_pos]
+        # for every dir in your backup path
+        # check if its too old
+        for dirname in os.listdir(BACKUP_PATH):
+            if dirname.find(prefix) == 0:
+                try:
+                    end_pos = date_pos+len(time.strftime(TIME_FORMAT))
+                    date_str = dirname[date_pos:end_pos]
+                    keep_days = datetime.timedelta(days=KEEP_DATA_PERIOD)
+                    created_date = datetime.datetime.strptime(date_str,
+                                                              TIME_FORMAT)
+                    if created_date < datetime.datetime.today() - keep_days:
+                        # delete backuped dir and files if its old enough
+                        del_dir = BACKUP_PATH + dirname
+                        shutil.rmtree(del_dir)
+                        print_log("deleted backup files in: {0}"
+                                  .format(del_dir))
+                except:
+                    # wrong dir name found
+                    # for we can not recognize date string in dir name
+                    print_log("wrong format found on folder {0},"
+                              " passed".format(dirname))
+
+# ################################
+# ##### START OF CONFIG PART #####
+# ################################
 
 # Config file to get To-Backup database(s) info
 # You can assign multi database info in config file
@@ -81,7 +121,7 @@ def need_gtid():
 
 # Notice that the section name must be "RESTORE_SETTINGS"
 # the databases will be restored with Prefix_OriginName
-# so if you want to back up with origin name, leave Prefix option blank
+# so if you want to bacup with origin name, leave Prefix option blank
 # make sure you created the same databses on your restore mysql
 # and make sure your account have the appropraite provilieges
 # PORT option is optional if you are using 3306
@@ -92,10 +132,27 @@ DB_MUST_OPTIONS = ('Host', 'User', 'Password', 'Database', 'Need_Restore')
 Restore_DBs = []
 RESTORE_MUST_OPTIONS = ('Host', 'User', 'Password', 'Prefix')
 
-# Define the base back up folder
-# And generate real-time backup folder using current datetime
+# Define your favorite time format, it needs to obey python's strftime format
+# this info will be used in backup directory name
+# suggest you keep year, month, date info at least, especially if you'd like to
+# let program delete overdue backuped data.
+TIME_FORMAT = '%Y%m%d-%H%M%S'
+
+# Define the base backup folder and bake up file name
+# generate real-time backup folder and file using current datetime
 BACKUP_PATH = os.path.abspath(os.path.dirname(__file__)) + '/backup/'
-TODAY_BACKUP_PATH = BACKUP_PATH + time.strftime('%Y%m%d-%H%M%S')
+BACKUP_DIRNAME = 'db-' + time.strftime(TIME_FORMAT)
+TODAY_BACKUP_PATH = BACKUP_PATH + BACKUP_DIRNAME
+
+# Define the period the program will keep backup data
+# program will delete backuped data before this date
+# keep this paramater as -1 if you do not want to delete any backuped data
+# make sense that you must have a date information is your backup directory
+KEEP_DATA_PERIOD = 7
+
+# ##############################
+# ##### END OF CONFIG PART #####
+# ##############################
 
 print('''
 #################################################################
@@ -104,6 +161,15 @@ print('''
 
       '''
       .format(time.strftime('%Y-%m-%d %H:%M:%S')))
+
+# Cleaning former backuped data
+if not isinstance(KEEP_DATA_PERIOD, int) or KEEP_DATA_PERIOD < -1:
+    print_log("wrong format of KEEP_DATA_PERIOD,"
+              " needs to be int and larger than -1, skip clean data stage")
+elif KEEP_DATA_PERIOD != -1:
+    print_log("start cleaning up data backuped before {0} days"
+              .format(KEEP_DATA_PERIOD))
+    del_backup()
 
 # Checking if backup folder already exists. Create it if not.
 print_log("checking backup folder")
@@ -123,7 +189,7 @@ try:
     config.read(CONFIG_FILE)
     for database in config.sections():
         if database != 'RESTORE_SETTINGS':
-            print_log('checking and back up database: {0}'.format(database))
+            print_log('checking and backuping database: {0}'.format(database))
 
             # Checking if all options needed had been set
             legal_section = True
@@ -219,7 +285,7 @@ try:
         if legal_restore_info:
             for db_name in Restore_DBs:
                 print_log('start restoring databases {0}'.format(db_name))
-                # generating back up database name
+                # generating backup database name
                 backup_name = config.get('RESTORE_SETTINGS', 'Prefix') \
                                     .replace(' ', '') + '_' + db_name
                 if backup_name[0] == '_':
