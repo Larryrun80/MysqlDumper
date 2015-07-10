@@ -307,7 +307,7 @@ try:
                              + ".sql"
 
                 # Open this if you want to debug the command
-                print_log(restorecmd)
+                # print_log(restorecmd)
 
                 # executing restore command
                 try:
