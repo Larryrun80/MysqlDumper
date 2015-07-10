@@ -48,7 +48,7 @@ def need_gtid():
 # pass a date format date
 def del_backup():
     # If found backup dir, do
-    if not os.path.exists(TODAY_BACKUP_PATH):
+    if os.path.exists(TODAY_BACKUP_PATH):
         # get the start pos of the time string in backup dir name
         date_pos = BACKUP_DIRNAME.find(time.strftime(TIME_FORMAT))
         if date_pos == -1:
@@ -67,7 +67,7 @@ def del_backup():
                         keep_days = datetime.timedelta(days=KEEP_DATA_PERIOD)
                         created_date = datetime.datetime.strptime(date_str,
                                                                   TIME_FORMAT)
-                        if created_date < datetime.datetime.today() - keep_days:
+                        if created_date < datetime.datetime.today()-keep_days:
                             # delete backuped dir and files if its old enough
                             del_dir = BACKUP_PATH + dirname
                             shutil.rmtree(del_dir)
@@ -150,6 +150,10 @@ TODAY_BACKUP_PATH = BACKUP_PATH + BACKUP_DIRNAME
 # keep this paramater as -1 if you do not want to delete any backuped data
 # make sense that you must have a date information is your backup directory
 KEEP_DATA_PERIOD = 7
+
+# Debug mode, if you turns this option to "True", MysqlDumper will print
+# backup command and restore command(if there are any dbs to be restored)
+DEBUG_MODE = False
 
 # ##############################
 # ##### END OF CONFIG PART #####
@@ -257,8 +261,8 @@ try:
                                   + ' ' \
                                   + dumpcmd
 
-                # Open this if you want to debug the command
-                # print_log(dumpcmd)
+                if DEBUG_MODE:
+                    print_log(dumpcmd)
 
                 # executing backup command
                 try:
@@ -307,8 +311,8 @@ try:
                              + db_name \
                              + ".sql"
 
-                # Open this if you want to debug the command
-                # print_log(restorecmd)
+                if DEBUG_MODE:
+                    print_log(restorecmd)
 
                 # executing restore command
                 try:

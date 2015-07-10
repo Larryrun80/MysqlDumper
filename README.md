@@ -82,6 +82,12 @@ Now we list some customization options below, you can find them in mysqldumper.p
 - KEEP_DATA_PERIOD  
     Set days you want to keep your backup data. Default value is to keep recent 7 days' data. This option is very important if you run this program automaticly using crontab or something else. Set the value to "-1" if you want to keep all backuped data. 
 
+## Debug
+If you have encounter some error when backuping and restoring, or you modified some code which generate backup/restore command, you can set option DEBUG_MODE to True. Then the to-be-execute command will be printed.
+```
+DEBUG_MODE = True
+```
+
 ## Dealing Errors
 The script always tries to give out detail error info, if you found obstacle to get error info, please inform me.
 When you are backing up a large db, lots errors may be caused by you mysql settings, like:
