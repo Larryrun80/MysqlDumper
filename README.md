@@ -1,7 +1,9 @@
 # MysqlDumper
 Scripts help you backup/restore your database, support mysql 5.x  
-Support ignore table, connect to remote db via ssh tunnel  
-Support just keep recent backup files to release your disk capacity  
+- Support ignore table in backup process  
+- Support connecting to remote db via ssh tunnel  
+- Support just keeping recent backup files to release your disk capacity  
+
 You should have a Python 3.x enviroment to run MysqlDumper  
 
 ## Installation
