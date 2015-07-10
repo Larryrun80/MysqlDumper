@@ -1,8 +1,8 @@
 # MysqlDumper
-Scripts help you backup/restore your database, support mysql 5.x
-Support ignore table, connect to remote db via ssh tunnel
-Support just keep recent backup files to release your disk capacity
-You should have a Python 3.x enviroment to run MysqlDumper
+Scripts help you backup/restore your database, support mysql 5.x  
+Support ignore table, connect to remote db via ssh tunnel  
+Support just keep recent backup files to release your disk capacity  
+You should have a Python 3.x enviroment to run MysqlDumper  
 
 ## Installation
 Check our MysqlDumper where you want to install it. Went to some suitable place and run:
@@ -69,15 +69,15 @@ Or change the default config file in mysqldumper.py
 ## Customization
 You can do some customization job to fit your requirements， of course you can also skip this part, MysqlDumper will work correctly, too.
 Now we list some customization options below, you can find them in mysqldumper.py and change its value:
-- CONFIG_FILE
+- CONFIG_FILE  
     You can set your own config file location and config file name here
-- TIME_FORMAT
+- TIME_FORMAT  
     Time format is used to organize your favirate backup file name. If you want to change it, remember to rewrite it in python's strftime format, but we suggest you keep year(%Y), month(%m), date(%d) information, especially if you want to restore a db after its backuped.
-- BACKUP_PATH
+- BACKUP_PATH  
     You can define where to put your backup files
-- BACKUP_DIRNAME
+- BACKUP_DIRNAME  
     In BACKUP_PATH, we will create a backup directory every time you run this program, you can specify your personal backup dir name here, but remember to include "time.strftime(TIME_FORMAT)", this will import your favirate time format to be a part of your dir name, of you can also just use "time.strftime(TIME_FORMAT)" as your dir name.
-- KEEP_DATA_PERIOD
+- KEEP_DATA_PERIOD  
     Set days you want to keep your backup data. Default value is to keep recent 7 days' data. This option is very important if you run this program automaticly using crontab or something else. Set the value to "-1" if you want to keep all backuped data. 
 
 ## Dealing Errors
