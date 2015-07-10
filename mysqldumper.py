@@ -4,13 +4,12 @@
 ###########################################################
 #
 # This python script is used for mysql database backup
-# for mysql version above 5.6
 #
 # Written by : Larry Guo
 # Created date: June 29, 2015
-# Last modified: June 29, 2015
+# Last modified: July 10, 2015
 # Tested with : Python 3.4.3
-# Script Revision: 1.0
+# Script Revision: 2.0
 #
 ##########################################################
 
@@ -48,35 +47,37 @@ def need_gtid():
 # Delete former backup files
 # pass a date format date
 def del_backup():
-    # get the start pos of the time string in backup dir name
-    date_pos = BACKUP_DIRNAME.find(time.strftime(TIME_FORMAT))
-    if date_pos == -1:
-        print_log("defined dir name is invalid, clean up terminated")
-        return
-    else:
-        # get a valid backuped dirname
-        prefix = BACKUP_DIRNAME[0:date_pos]
-        # for every dir in your backup path
-        # check if its too old
-        for dirname in os.listdir(BACKUP_PATH):
-            if dirname.find(prefix) == 0:
-                try:
-                    end_pos = date_pos+len(time.strftime(TIME_FORMAT))
-                    date_str = dirname[date_pos:end_pos]
-                    keep_days = datetime.timedelta(days=KEEP_DATA_PERIOD)
-                    created_date = datetime.datetime.strptime(date_str,
-                                                              TIME_FORMAT)
-                    if created_date < datetime.datetime.today() - keep_days:
-                        # delete backuped dir and files if its old enough
-                        del_dir = BACKUP_PATH + dirname
-                        shutil.rmtree(del_dir)
-                        print_log("deleted backup files in: {0}"
-                                  .format(del_dir))
-                except:
-                    # wrong dir name found
-                    # for we can not recognize date string in dir name
-                    print_log("wrong format found on folder {0},"
-                              " passed".format(dirname))
+    # If found backup dir, do
+    if not os.path.exists(TODAY_BACKUP_PATH):
+        # get the start pos of the time string in backup dir name
+        date_pos = BACKUP_DIRNAME.find(time.strftime(TIME_FORMAT))
+        if date_pos == -1:
+            print_log("defined dir name is invalid, clean up terminated")
+            return
+        else:
+            # get a valid backuped dirname
+            prefix = BACKUP_DIRNAME[0:date_pos]
+            # for every dir in your backup path
+            # check if its too old
+            for dirname in os.listdir(BACKUP_PATH):
+                if dirname.find(prefix) == 0:
+                    try:
+                        end_pos = date_pos+len(time.strftime(TIME_FORMAT))
+                        date_str = dirname[date_pos:end_pos]
+                        keep_days = datetime.timedelta(days=KEEP_DATA_PERIOD)
+                        created_date = datetime.datetime.strptime(date_str,
+                                                                  TIME_FORMAT)
+                        if created_date < datetime.datetime.today() - keep_days:
+                            # delete backuped dir and files if its old enough
+                            del_dir = BACKUP_PATH + dirname
+                            shutil.rmtree(del_dir)
+                            print_log("deleted backup files in: {0}"
+                                      .format(del_dir))
+                    except:
+                        # wrong dir name found
+                        # for we can not recognize date string in dir name
+                        print_log("wrong format found on folder {0},"
+                                  " passed".format(dirname))
 
 # ################################
 # ##### START OF CONFIG PART #####
