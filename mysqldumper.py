@@ -155,6 +155,15 @@ KEEP_DATA_PERIOD = 7
 # backup command and restore command(if there are any dbs to be restored)
 DEBUG_MODE = False
 
+# You can design some bash command to exec before restore
+# This command will not be executed if you won't restore any database
+# You can use "&&" if you want to execute multi commands
+# Make sure the command will be operate correctly in bash
+# Keep it '' if you do not need execute anything
+PRERESTORE_COMMAND = '''
+
+'''
+
 # ##############################
 # ##### END OF CONFIG PART #####
 # ##############################
@@ -288,6 +297,17 @@ try:
                 legal_restore_info = False
         # Starting restore
         if legal_restore_info:
+            # Execute any bash commands if needs
+            if PRERESTORE_COMMAND is not None and PRERESTORE_COMMAND != '':
+                try:
+                    subprocess.check_call(PRERESTORE_COMMAND,
+                                          stderr=subprocess.STDOUT,
+                                          shell=True)
+                except subprocess.CalledProcessError as e:
+                    print_log('error found when execute pre-restore command: \
+                               {0}'.format(PRERESTORE_COMMAND))
+
+            # Restoring dbs
             for db_name in Restore_DBs:
                 print_log('start restoring databases {0}'.format(db_name))
                 # generating backup database name
