@@ -37,6 +37,11 @@ We suggest you using [pyenv](https://github.com/yyuu/pyenv) or virtualenv to man
 - You can also create conf file manually, if you want do this:
 create a config file with following format to run MysqlDumper correctly:
 ```
+[GENERAL_SETTINGS]
+Time_Format = %Y%m%d-%H%M%S
+Keep_Data_Period = 7
+PRERESTORE_COMMAND = your cammand
+
 [RESTORE_SETTINGS]
 Host = localhost
 User = username
@@ -57,16 +62,55 @@ Need_Restore = yes
 SSH_Tunnel = username@host
 ```
 
-First part [RESTORE_SETTINGS] is used for restore operations
+### [GENERAL_SETTINGS] 
+This part is used for...  general settings.
+Keep its name as "GENERAL_SETTINGS"
+- Time_Format
+    You can define your favorite time format here, it needs to obey python's strftime format. 
+
+    This string will be used in backup directory name. 
+
+    We suggest you use all of "year", "month", "date" info at least, especially if you'd like to let program delete overdue backuped data.
+
+- Keep_Data_Period
+    Define the period the program will keep backup data. 
+
+    MysqlDumper will delete backuped data before this date, keep this paramater as -1 if you do not want to delete any backuped data. 
+
+    Make sense that you must have a date information is your backup directory
+
+- Pre_Restore_Command
+    You can design some bash command to exec before restore. 
+
+    This command will not be executed if you won't restore any database. 
+    
+    You can use "&&" if you want to execute multi commands. 
+    
+    Make sure the command will be operate correctly in bash. 
+    
+    Keep it '' if you do not need execute anything
+
+### [RESTORE_SETTINGS]
+This part is used for restore operations. 
+
 If you only want to backup a db but do not need it restored, skip it.
-But if you want to use this section, be care keep it name as "RESTORE_SETTINGS".
 
-Second part [DATABASE_NAME_TO_BACKUP] is used for backup operations, you can create multi sections with same format to backup multi databases, you can change section name to everything you need, but we suggest you use your database name.
-In this part, make sense "Need_Restore" option indicate if this database should be restored after backuped, use "yes" or "no" as its value.
-You can pass SSH_Tunnel option if you do not need to connect database using SSH Tunnel. If you want to use this function, pls make sense it's now only support ssh key tunnels. Read [this](https://wiki.archlinux.org/index.php/SSH_keys#Generating_an_SSH_key_pair) if you want to know how to use SSH Keys.
+If you want to use this section, be care keep its name as "RESTORE_SETTINGS".
 
-You can create this config file as conf/mysqldumper.conf
-Or change the default config file in mysqldumper.py
+### [DATABASE_NAME_TO_BACKUP] 
+This part is used for backup operations, you can create multi sections with same format to backup multi databases, you can change section name to everything you need, but we suggest you use your database name.
+PORT, Ignore_Tables, SSH_Tunnel is not a must required config
+- Need_Restore
+    if you want to restore database after it is backuped, set Need_Restore as 'yes', else keep it 'no'. Remember to add restore settings below if you choose yes
+- Ignore_Tables
+    If you want to ignore some tables in backup progress, use ',' to seperate them
+- SSH_Tunnel
+    You can pass SSH_Tunnel option if you do not need to connect database using SSH Tunnel. Write a "username@host_ip" format string to enable it. If you want to use this function, pls make sense it's now only support ssh key tunnels. Read [this](https://wiki.archlinux.org/index.php/SSH_keys#Generating_an_SSH_key_pair) if you want to know how to use SSH Keys.
+
+Make sure you assigned accounts with enough proviliegesleges
+
+
+You can create this config file as conf/mysqldumper.conf or change the default config file in mysqldumper.py
 
 ## Customization
 You can do some customization job to fit your requirements， of course you can also skip this part, MysqlDumper will work correctly, too.

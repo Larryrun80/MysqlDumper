@@ -46,30 +46,30 @@ def need_gtid():
 
 # Delete former backup files
 # pass a date format date
-def del_backup():
+def del_backup(backup_path, backup_dir, time_format, keep_data_period):
     # If found backup dir, do
-    if os.path.exists(TODAY_BACKUP_PATH):
+    if os.path.exists(backup_path + backup_dir):
         # get the start pos of the time string in backup dir name
-        date_pos = BACKUP_DIRNAME.find(time.strftime(TIME_FORMAT))
+        date_pos = backup_dir.find(time.strftime(time_format))
         if date_pos == -1:
             print_log("defined dir name is invalid, clean up terminated")
             return
         else:
             # get a valid backuped dirname
-            prefix = BACKUP_DIRNAME[0:date_pos]
+            prefix = backup_dir[0:date_pos]
             # for every dir in your backup path
             # check if its too old
-            for dirname in os.listdir(BACKUP_PATH):
+            for dirname in os.listdir(backup_path):
                 if dirname.find(prefix) == 0:
                     try:
-                        end_pos = date_pos+len(time.strftime(TIME_FORMAT))
+                        end_pos = date_pos+len(time.strftime(time_format))
                         date_str = dirname[date_pos:end_pos]
-                        keep_days = datetime.timedelta(days=KEEP_DATA_PERIOD)
+                        keep_days = datetime.timedelta(days=keep_data_period)
                         created_date = datetime.datetime.strptime(date_str,
-                                                                  TIME_FORMAT)
+                                                                  time_format)
                         if created_date < datetime.datetime.today()-keep_days:
                             # delete backuped dir and files if its old enough
-                            del_dir = BACKUP_PATH + dirname
+                            del_dir = backup_path + dirname
                             shutil.rmtree(del_dir)
                             print_log("deleted backup files in: {0}"
                                       .format(del_dir))
@@ -87,6 +87,18 @@ def del_backup():
 # You can assign multi database info in config file
 # Remember using same format as following:
 
+# [GENERAL_SETTINGS]
+# Time_Format = %Y%m%d-%H%M%S
+# Keep_Data_Period = 7
+# PRERESTORE_COMMAND = your cammand
+
+# [RESTORE_SETTINGS]
+# Host = localhost
+# User = username
+# Password = password
+# PORT = 3306
+# Prefix =
+
 # [DB_NAME_TO_BACKUP]
 # Host = localhost
 # User = username
@@ -99,16 +111,9 @@ def del_backup():
 #                 tab_g, tab_h
 # SSH_Tunnel = user@host_ip_address
 
-# PORT, Ignore_Tables, SSH_Tunnel is not a must required config
-# Need_Restore: if you want to restore database after it is backuped,
-#               set Need_Restore as 'yes', else keep it 'no'
-#               remember to add restore settings below if you choose yes
-# Ignore_Tables: if you want to ignore some tables in backup progress,
-#                use ',' to seperate them
-# SSH_Tunnel: if database must be visited via a ssh tunnel, write a
-#             "username@host_ip" format string to enable it
-#             this function is now only support tunnels via ssh key
-# Make sure you assigned accounts with enough proviliegesleges
+# Read README.md to find how to configure this file
+
+
 
 # Remember to keep a restore section if you want to restore some dbs after
 # backup, using following example:
@@ -133,36 +138,9 @@ DB_MUST_OPTIONS = ('Host', 'User', 'Password', 'Database', 'Need_Restore')
 Restore_DBs = []
 RESTORE_MUST_OPTIONS = ('Host', 'User', 'Password', 'Prefix')
 
-# Define your favorite time format, it needs to obey python's strftime format
-# this info will be used in backup directory name
-# suggest you keep year, month, date info at least, especially if you'd like to
-# let program delete overdue backuped data.
-TIME_FORMAT = '%Y%m%d-%H%M%S'
-
-# Define the base backup folder and bake up file name
-# generate real-time backup folder and file using current datetime
-BACKUP_PATH = os.path.abspath(os.path.dirname(__file__)) + '/backup/'
-BACKUP_DIRNAME = 'db-' + time.strftime(TIME_FORMAT)
-TODAY_BACKUP_PATH = BACKUP_PATH + BACKUP_DIRNAME
-
-# Define the period the program will keep backup data
-# program will delete backuped data before this date
-# keep this paramater as -1 if you do not want to delete any backuped data
-# make sense that you must have a date information is your backup directory
-KEEP_DATA_PERIOD = 7
-
 # Debug mode, if you turns this option to "True", MysqlDumper will print
 # backup command and restore command(if there are any dbs to be restored)
 DEBUG_MODE = False
-
-# You can design some bash command to exec before restore
-# This command will not be executed if you won't restore any database
-# You can use "&&" if you want to execute multi commands
-# Make sure the command will be operate correctly in bash
-# Keep it '' if you do not need execute anything
-PRERESTORE_COMMAND = '''
-
-'''
 
 # ##############################
 # ##### END OF CONFIG PART #####
@@ -176,33 +154,63 @@ print('''
       '''
       .format(time.strftime('%Y-%m-%d %H:%M:%S')))
 
-# Cleaning former backuped data
-if not isinstance(KEEP_DATA_PERIOD, int) or KEEP_DATA_PERIOD < -1:
-    print_log("wrong format of KEEP_DATA_PERIOD,"
-              " needs to be int and larger than -1, skip clean data stage")
-elif KEEP_DATA_PERIOD != -1:
-    print_log("start cleaning up data backuped before {0} days"
-              .format(KEEP_DATA_PERIOD))
-    del_backup()
-
-# Checking if backup folder already exists. Create it if not.
-print_log("checking backup folder")
-if not os.path.exists(TODAY_BACKUP_PATH):
-    os.makedirs(TODAY_BACKUP_PATH)
-    print_log('created backup folder: {0}'.format(TODAY_BACKUP_PATH))
-else:
-    print_log('backup folder found at {0}'.format(TODAY_BACKUP_PATH))
-
 try:
-    # Geting databases and backup
+    # Checking config file
     config = ConfigParser()
     if not os.path.exists(CONFIG_FILE):
         print_log('Config file not found at: {0}, exit'
                   .format(os.path.abspath(CONFIG_FILE)))
         sys.exit()
     config.read(CONFIG_FILE)
+
+    # Loading general settings and init
+    legal_config_file = False
+    if config.has_section('GENERAL_SETTINGS'):
+        if config. has_option('GENERAL_SETTINGS', 'Time_Format')\
+           and config. has_option('GENERAL_SETTINGS', 'Keep_Data_Period'):
+            time_format = config.get('GENERAL_SETTINGS', 'Time_Format')
+            keep_data_period = config.get('GENERAL_SETTINGS',
+                                          'Keep_Data_Period')
+            legal_config_file = True
+            if keep_data_period.isdigit():
+                keep_data_period = int(keep_data_period)
+            else:
+                print_log('Wrong format of Keep_Data_Period: '
+                          '{0}'.format(keep_data_period))
+                keep_data_period = -1
+        pre_restore_command = None
+        if config.has_option('GENERAL_SETTINGS', 'Pre_Restore_Command')\
+           and config.get('GENERAL_SETTINGS', 'Pre_Restore_Command') != '':
+            pre_restore_command = config.get('GENERAL_SETTINGS',
+                                             'Pre_Restore_Command')
+
+    # Define the base backup folder and bake up file name
+    # generate real-time backup folder and file using current datetime
+    backup_path = os.path.abspath(os.path.dirname(__file__))
+    backup_path += '/backup/'
+    backup_dirname = 'db-' + time.strftime(time_format)
+    today_backup_path = backup_path + backup_dirname
+
+    # Checking if backup folder already exists. Create it if not.
+    print_log("checking backup folder")
+    if not os.path.exists(today_backup_path):
+        os.makedirs(today_backup_path)
+        print_log('created backup folder: {0}'.format(today_backup_path))
+    else:
+        print_log('backup folder found at {0}'.format(today_backup_path))
+
+    # Cleaning former backuped data
+    if keep_data_period < -1:
+        print_log("wrong format of keep_data_period,"
+                  " needs to be int and larger than -1, skip clean data stage")
+    elif keep_data_period != -1:
+        print_log("start cleaning up data backuped before {0} days"
+                  .format(keep_data_period))
+        del_backup(backup_path, backup_dirname, time_format, keep_data_period)
+
+    # Geting databases and backup
     for database in config.sections():
-        if database != 'RESTORE_SETTINGS':
+        if database != 'RESTORE_SETTINGS' and database != 'GENERAL_SETTINGS':
             print_log('checking and backuping database: {0}'.format(database))
 
             # Checking if all options needed had been set
@@ -253,7 +261,7 @@ try:
 
                 dumpcmd += "--single-transaction --quick" \
                            + "  > " \
-                           + TODAY_BACKUP_PATH \
+                           + today_backup_path \
                            + "/" \
                            + config.get(database, 'Database') \
                            + ".sql"
@@ -298,14 +306,14 @@ try:
         # Starting restore
         if legal_restore_info:
             # Execute any bash commands if needs
-            if PRERESTORE_COMMAND is not None and PRERESTORE_COMMAND != '':
+            if pre_restore_command is not None and pre_restore_command != '':
                 try:
-                    subprocess.check_call(PRERESTORE_COMMAND,
+                    subprocess.check_call(pre_restore_command,
                                           stderr=subprocess.STDOUT,
                                           shell=True)
                 except subprocess.CalledProcessError as e:
                     print_log('error found when execute pre-restore command: \
-                               {0}'.format(PRERESTORE_COMMAND))
+                               {0}'.format(pre_restore_command))
 
             # Restoring dbs
             for db_name in Restore_DBs:
@@ -326,7 +334,7 @@ try:
                              + " " \
                              + backup_name \
                              + " < " \
-                             + TODAY_BACKUP_PATH \
+                             + today_backup_path \
                              + "/" \
                              + db_name \
                              + ".sql"
