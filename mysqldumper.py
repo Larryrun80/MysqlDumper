@@ -179,10 +179,15 @@ try:
                           '{0}'.format(keep_data_period))
                 keep_data_period = -1
         pre_restore_command = None
+        post_restore_command = None
         if config.has_option('GENERAL_SETTINGS', 'Pre_Restore_Command')\
            and config.get('GENERAL_SETTINGS', 'Pre_Restore_Command') != '':
             pre_restore_command = config.get('GENERAL_SETTINGS',
                                              'Pre_Restore_Command')
+        if config.has_option('GENERAL_SETTINGS', 'Post_Restore_Command')\
+           and config.get('GENERAL_SETTINGS', 'Post_Restore_Command') != '':
+            post_restore_command = config.get('GENERAL_SETTINGS',
+                                             'Post_Restore_Command')
 
     # Define the base backup folder and bake up file name
     # generate real-time backup folder and file using current datetime
@@ -348,6 +353,17 @@ try:
                                           stderr=subprocess.STDOUT,
                                           shell=True)
                     print_log('restore {0} successed'.format(db_name))
+
+                    # Execute any bash commands if needs
+                    if post_restore_command is not None\
+                       and post_restore_command != '':
+                        try:
+                            subprocess.check_call(post_restore_command,
+                                                  stderr=subprocess.STDOUT,
+                                                  shell=True)
+                        except subprocess.CalledProcessError as e:
+                            print_log('error found when execute pre-restore command: \
+                                       {0}'.format(post_restore_command))
                 except subprocess.CalledProcessError as e:
                     print_log('error found, restore terminated')
 except SystemExit:
