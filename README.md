@@ -62,7 +62,7 @@ Need_Restore = yes
 SSH_Tunnel = username@host
 ```
 
-### [GENERAL_SETTINGS] 
+###### [GENERAL_SETTINGS] 
 This part is used for...  general settings.
 Keep its name as "GENERAL_SETTINGS"
 - Time_Format
@@ -90,14 +90,14 @@ Keep its name as "GENERAL_SETTINGS"
     
     Keep it '' if you do not need execute anything
 
-### [RESTORE_SETTINGS]
+###### [RESTORE_SETTINGS]
 This part is used for restore operations. 
 
 If you only want to backup a db but do not need it restored, skip it.
 
 If you want to use this section, be care keep its name as "RESTORE_SETTINGS".
 
-### [DATABASE_NAME_TO_BACKUP] 
+###### [DATABASE_NAME_TO_BACKUP] 
 This part is used for backup operations, you can create multi sections with same format to backup multi databases, you can change section name to everything you need, but we suggest you use your database name.
 PORT, Ignore_Tables, SSH_Tunnel is not a must required config
 - Need_Restore
@@ -153,6 +153,8 @@ if you encounter this error when restoring your db, try to:
 1. set the value for "max_allowed_packet" variable as 1GB in your my.cnf
 2. increase the value for the "wait_timeout" variable to 6000
 and restart your mysql.
+
+if you passed this error after setting these parameters but encounter it again later, you can try execute restart restore mysql before restore a database. See Pre_Restore_Command part in config file settings.
 
 ## Todo
 - Add more mysqldump parameters if needed
