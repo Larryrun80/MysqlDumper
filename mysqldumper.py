@@ -140,7 +140,7 @@ RESTORE_MUST_OPTIONS = ('Host', 'User', 'Password', 'Prefix')
 
 # Debug mode, if you turns this option to "True", MysqlDumper will print
 # backup command and restore command(if there are any dbs to be restored)
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 # ##############################
 # ##### END OF CONFIG PART #####
@@ -332,7 +332,7 @@ try:
                 # generating restore command to exec
                 restorecmd = "MYSQL_PWD="\
                              + config.get('RESTORE_SETTINGS', 'Password') \
-                             + " mysql -h"\
+                             + " mysql -f -h"\
                              + config.get('RESTORE_SETTINGS', 'Host') \
                              + " -u" \
                              + config.get('RESTORE_SETTINGS', 'User') \
@@ -362,7 +362,7 @@ try:
                                                   stderr=subprocess.STDOUT,
                                                   shell=True)
                         except subprocess.CalledProcessError as e:
-                            print_log('error found when execute pre-restore command: \
+                            print_log('error found when execute post-restore command: \
                                        {0}'.format(post_restore_command))
                 except subprocess.CalledProcessError as e:
                     print_log('error found, restore terminated')
